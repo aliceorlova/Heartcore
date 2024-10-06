@@ -1,59 +1,80 @@
 import React, { Component } from 'react';
+import axios from 'axios';
+import PersonCard from './PersonCard'; 
+import { Card, Button, Container, Row, Col, Modal } from 'react-bootstrap';
 
 export class FetchData extends Component {
   static displayName = FetchData.name;
 
   constructor(props) {
     super(props);
-    this.state = { forecasts: [], loading: true };
+      this.state = {
+          people: [],
+          show: false, // State to manage modal visibility
+          loading: false,
+          selectedPerson: null, // State to store the selected person
+      };
   }
 
-  componentDidMount() {
-    this.populateWeatherData();
-  }
+    handleClose = () => {
+        this.setState({ show: false });
+    };
 
-  static renderForecastsTable(forecasts) {
-    return (
-      <table className="table table-striped" aria-labelledby="tableLabel">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Temp. (C)</th>
-            <th>Temp. (F)</th>
-            <th>Summary</th>
-          </tr>
-        </thead>
-        <tbody>
-          {forecasts.map(forecast =>
-            <tr key={forecast.date}>
-              <td>{forecast.date}</td>
-              <td>{forecast.temperatureC}</td>
-              <td>{forecast.temperatureF}</td>
-              <td>{forecast.summary}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+    handleShow = (item) => {
+        this.setState({ show: true, selectedPerson: item });
+    };
+
+    handleLoadData = () => {
+        this.fetchData(); // Fetch data when button is clicked
+    };
+
+    render() {
+
+        const { people, show, loading, selectedPerson } = this.state;
+
+        return (
+            <Container>
+
+                <Button variant="primary" onClick={this.handleLoadData} className="mb-3">
+                    Load Data To Umbraco and Display
+                </Button>
+                {loading && <div>Loading...</div>}
+            <Row>
+                {people.map(item => (
+                    <Col key={item.id} xs={12} sm={6} md={3}>
+                        <PersonCard item={item} handleShow={this.handleShow} /> 
+                    </Col>
+                ))}
+            </Row>
+            <Modal show={show} onHide={this.handleClose}>
+                <Modal.Header closeButton>
+                        <Modal.Title>{selectedPerson?.name}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                        <img src={selectedPerson?.image} alt={selectedPerson?.name} style={{ width: '100%', height: 'auto' }} />
+                        <p><strong>Birthday:</strong> {selectedPerson?.birthday}</p>
+                        <p><strong>Country:</strong> {selectedPerson?.country}</p>
+                    <p><strong>Shows:</strong></p>
+                    <ul>
+                            {selectedPerson?.shows.map((show, index) => (
+                            <li key={index}>{show.name}</li>
+                        ))}
+                    </ul>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={this.handleClose}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+    </Container>
     );
-  }
+  } 
 
-  render() {
-    let contents = this.state.loading
-      ? <p><em>Loading...</em></p>
-      : FetchData.renderForecastsTable(this.state.forecasts);
-
-    return (
-      <div>
-        <h1 id="tableLabel">Weather forecast</h1>
-        <p>This component demonstrates fetching data from the server.</p>
-        {contents}
-      </div>
-    );
-  }
-
-  async populateWeatherData() {
-    const response = await fetch('weatherforecast');
-    const data = await response.json();
-    this.setState({ forecasts: data, loading: false });
-  }
+    fetchData = async () => {
+        this.setState({ loading: true })
+        const response = await fetch('people');
+        const data = await response.json();
+        this.setState({ people:data, loading: false });
+    }
 }
